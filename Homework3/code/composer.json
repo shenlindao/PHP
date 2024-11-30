@@ -1,0 +1,15 @@
+{
+    "name": "example/project",
+    "description": "Приложение работы с файловым хранилищем",
+    "type": "project",
+    "require": {
+        "php": "^8.0"
+    },
+    "autoload": {
+        "files": [
+            "src/main.function.php",
+            "src/template.function.php",
+            "src/file.function.php"
+        ]
+    }
+}
