@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>
+            {{ title }}
+        </title>
+        <link href="/css/404.css" rel="stylesheet">
+        <link href="/css/main.css" rel="stylesheet">
+    </head>
+    <body>
+        {% include 'layouts/header.twig' %}
+        <div class="container">
+        <div class="error-container">
+        
+                <h1 class="error-code">
+                    404        
+                </h1>
+                <p class="error-message">
+                    Ой! Страница не найдена. 
+                </p>
+                <p class="error-description">
+                    Похоже, что вы перешли по неверному адресу. Попробуйте вернуться на главную страницу.       
+                </p>
+                <a href="/" class="home-link">
+                    На главную
+                </a>
+            </div>
+        </div>
+        {% include 'layouts/footer.twig' %}
+    </body>
+</html>
