@@ -1,0 +1,13 @@
+<h1>
+    {{ title }}
+</h1>
+<div class="card">
+    <ul id="users__list">
+        {% for user in users %}
+            <li>
+            <u>User ID:</u> <b>{{ user.getUserId() }}</b> — <b>{{ user.getUserName() }} {{ user.getUserLastName() }}</b>
+            (День рождения: <b>{{ user.getUserBirthday() | date('d.m.Y') }}</b>)
+            </li>
+        {% endfor %}
+    </ul>
+</div>

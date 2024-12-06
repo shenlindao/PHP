@@ -1,0 +1,71 @@
+# Каталоги и файлы Docker
+.docker/
+docker-compose.override.yml
+
+# Логи
+*.log
+
+# Папки с временными файлами
+tmp/
+cache/
+
+# Папки для хранения зависимостей (например, для PHP)
+vendor/
+node_modules/
+
+# Настройки IDE
+.idea/
+.vscode/
+*.swp
+
+# PHP
+*.phpunit.result.cache
+phpunit.xml
+
+# Файлы конфигурации IDE и редакторов
+*.iml
+
+# Операционные системы
+.DS_Store
+Thumbs.db
+
+# Системные файлы
+*.bak
+*.tmp
+*.old
+
+# Сгенерированные файлы
+*.tar.gz
+*.zip
+*.tgz
+*.tar
+*.tar.bz2
+
+# Composer lock файлы, если они не нужны для версии
+composer.lock
+
+# Документы для сборки
+*.phar
+
+# Папки для локальных настроек
+.env
+.env.local
+
+# Папка публичных ресурсов
+/public/uploads/
+
+# Игнорирование сокет-файлов MySQL
+*.sock
+
+# Игнорирование файлов базы данных MySQL
+*.ibd
+*.log
+*.err
+*.pid
+
+# Игнорирование конфигурационных файлов MySQL
+*.cnf
+
+# Игнорирование файлов, связанных с настройками и автогенерацией
+*.opt
+*.cnf

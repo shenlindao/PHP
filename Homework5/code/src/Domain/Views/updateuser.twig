@@ -1,0 +1,34 @@
+<h1>
+    Изменение пользователя
+</h1>
+<div class="card">
+    <form action="/user/update" method="get" id="update-user-form">
+        <div class="form-item">
+            <label for="id">
+                ID пользователя:
+            </label>
+            <input type="number" id="id" name="id" required placeholder="Введите ID пользователя">
+        </div>
+        <div class="form-item">
+            <label for="name">
+                Имя:
+            </label>
+            <input type="text" id="name" name="name" placeholder="Введите имя">
+        </div>
+        <div class="form-item">
+            <label for="lastname">
+                Фамилия:
+            </label>
+            <input type="text" id="lastname" name="lastname" placeholder="Введите фамилию">
+        </div>
+        <div class="form-item">
+            <label for="birthday">
+                Дата рождения:
+            </label>
+            <input type="date" id="birthday" name="birthday">
+        </div>
+        <button type="submit">
+            Изменить пользователя
+        </button>
+    </form>
+</div>

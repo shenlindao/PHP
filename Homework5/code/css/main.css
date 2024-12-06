@@ -149,8 +149,12 @@ textarea {
   resize: vertical;
 }
 
-.birthday {
+.form-item {
   margin-top: 20px;
+}
+
+.form-item:first-child {
+  margin-top: 0;
 }
 
 input:focus,
@@ -250,6 +254,14 @@ select:hover {
 #users__list {
   list-style: square;
   line-height: 20px;
+}
+
+#users__list li {
+  margin-bottom: 20px;
+}
+
+#users__list li:last-child {
+  margin-bottom: 0;
 }
 
 .home-link {
