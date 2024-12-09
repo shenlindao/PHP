@@ -4,9 +4,10 @@ namespace Geekbrains\Application1\Application;
 
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
+use Geekbrains\Application1\Domain\Controllers\AbstractController;
 use Geekbrains\Application1\Infrastructure\Config;
 use Geekbrains\Application1\Infrastructure\Storage;
-use Exception;
+use Geekbrains\Application1\Application\Auth;
 
 
 class Application
@@ -18,74 +19,92 @@ class Application
     private string $methodName;
 
     public static Config $config;
+
     public static Storage $storage;
+
+    public static Auth $auth;
 
     public function __construct()
     {
         Application::$config = new Config();
         Application::$storage = new Storage();
+        Application::$auth = new Auth();
     }
 
 
     public function run(): string
     {
-        // Разбиваем URI на части, игнорируя строку запроса
-        $routeArray = explode('/', ltrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'));
-
-        // Получаем строку запроса (если она есть)
-        $queryString = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
-
-        // Проверяем, если строка запроса существует, разбиваем её в массив
-        $queryParams = [];
-        if ($queryString) {
-            parse_str($queryString, $queryParams);
+        // Проверяем, запущена ли сессия
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
         }
 
-        // Если путь пустой, то считаем, что мы на главной странице
+        $routeArray = explode('/', ltrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'));
         $controllerName = isset($routeArray[0]) && $routeArray[0] !== '' ? $routeArray[0] : 'page';
 
-        // Определяем имя контроллера (с добавлением имени пространства приложения)
+        // Определяем контроллер и метод по умолчанию
         $this->controllerName = Application::APP_NAMESPACE . ucfirst($controllerName) . 'Controller';
-
+        $this->methodName = isset($routeArray[2]) && $routeArray[2] !== '' ? 'action' . ucfirst($routeArray[2]) : 'actionIndex';
 
         if ($controllerName === 'user') {
-            // Проверка на сохранение пользователя
-            if (isset($routeArray[1]) && $routeArray[1] === 'save' && isset($queryParams['name']) && isset($queryParams['lastname']) && isset($queryParams['birthday'])) {
-                $this->controllerName = Application::APP_NAMESPACE . 'UserController';
-                $this->methodName = 'actionSave';
-                // Проверка на обновление пользователя
-            } elseif (isset($routeArray[1]) && $routeArray[1] === 'update' && isset($queryParams['id'])) {
-                $this->controllerName = Application::APP_NAMESPACE . 'UserController';
-                $this->methodName = 'actionUpdate';
-                // Проверка на удаление пользователя
-            } elseif (isset($routeArray[1]) && $routeArray[1] === 'delete' && isset($queryParams['id'])) {
-                $this->controllerName = Application::APP_NAMESPACE . 'UserController';
-                $this->methodName = 'actionDelete';
-            } else {
-                $this->methodName = isset($routeArray[2]) && $routeArray[2] !== '' ? 'action' . ucfirst($routeArray[2]) : 'actionIndex';
-            }
-        } elseif ($controllerName === 'adduser') {
             $this->controllerName = Application::APP_NAMESPACE . 'UserController';
-            $this->methodName = 'addUserForm';
-        } elseif ($controllerName === 'updateuser') {
+            $actionMap = [
+                'POST' => [
+                    'save' => 'actionSave',
+                    'update' => 'actionUpdate',
+                    'delete' => 'actionDelete',
+                    'login' => 'actionLogin',
+                ],
+                'GET' => [
+                    'hash' => 'actionHash',
+                    'auth' => 'actionAuth',
+                    'logout' => 'actionLogout',
+                ],
+            ];
+            $method = $_SERVER['REQUEST_METHOD'];
+            $route = $routeArray[1] ?? null;
+            $this->methodName = $actionMap[$method][$route] ?? $this->methodName;
+        } elseif (in_array($controllerName, ['adduser', 'updateuser', 'deleteuser'])) {
             $this->controllerName = Application::APP_NAMESPACE . 'UserController';
-            $this->methodName = 'updateUserForm';
-        } elseif ($controllerName === 'deleteuser') {
-            $this->controllerName = Application::APP_NAMESPACE . 'UserController';
-            $this->methodName = 'deleteUserForm';
-        } else {
-            $this->methodName = isset($routeArray[2]) && $routeArray[2] !== '' ? 'action' . ucfirst($routeArray[2]) : 'actionIndex';
+            $methodMap = [
+                'adduser' => 'addUserForm',
+                'updateuser' => 'updateUserForm',
+                'deleteuser' => 'deleteUserForm',
+            ];
+            $this->methodName = $methodMap[$controllerName];
         }
 
         // Проверяем существование контроллера
         if (class_exists($this->controllerName)) {
-            // Проверяем существование метода в контроллере
+            // пытаемся вызвать метод
+            if (isset($routeArray[2]) && $routeArray[2] != '') {
+                $methodName = $routeArray[2];
+            } else {
+                $methodName = "index";
+            }
+
+            $this->methodName = "action" . ucfirst($methodName);
+
             if (method_exists($this->controllerName, $this->methodName)) {
                 $controllerInstance = new $this->controllerName();
-                // Вызываем метод контроллера
-                return call_user_func_array([$controllerInstance, $this->methodName], []);
+
+                if ($controllerInstance instanceof AbstractController) {
+                    if ($this->checkAccessToMethod($controllerInstance, $this->methodName)) {
+                        return call_user_func_array(
+                            [$controllerInstance, $this->methodName],
+                            []
+                        );
+                    } else {
+                        throw new \Exception("Нет доступа к методу");
+                    }
+                } else {
+                    return call_user_func_array(
+                        [$controllerInstance, $this->methodName],
+                        []
+                    );
+                }
             } else {
-                return $this->renderError(404);
+                throw new \Exception("Метод не существует");
             }
         } else {
             return $this->renderError(404);
@@ -113,5 +132,25 @@ class Application
         } catch (\Twig\Error\LoaderError $e) {
             return "Ошибка при загрузке шаблона: " . $e->getMessage();
         }
+    }
+
+    private function checkAccessToMethod(AbstractController $controllerInstance, string $methodName): bool
+    {
+        $userRoles = $controllerInstance->getUserRoles();
+
+        $rules = $controllerInstance->getActionsPermissions($methodName);
+
+        $isAllowed = false;
+
+        if (!empty($rules)) {
+            foreach ($rules as $rolePermission) {
+                if (in_array($rolePermission, $userRoles)) {
+                    $isAllowed = true;
+                    break;
+                }
+            }
+        }
+
+        return $isAllowed;
     }
 }

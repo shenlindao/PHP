@@ -1,0 +1,22 @@
+{% if success is not defined or success == false %}
+  <p class="card__error">{{ error }}</p>
+{% endif %}
+<div class="card">
+    <form action="/user/login" method="POST">
+        <input id="csrf_token" type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="form-item">
+            <label for="user-login">Логин:</label>
+            <input id="user-login" type="text" name="login">
+        </div>
+        <div class="form-item">
+            <label for="user-password">Пароль:</label>
+            <input id="user-password" type="password" name="password">
+        </div>
+        <div class="form-item">
+            <label for="remember-me">
+                <input id="remember-me" type="checkbox" name="remember_me" value="1"> Запомнить меня
+            </label>
+        </div>
+        <button type="submit">Войти</button>
+    </form>
+</div>

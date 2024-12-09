@@ -64,6 +64,7 @@ header nav ul li {
   margin: 0 20px;
 }
 
+header nav ul li,
 header nav ul li a {
   color: white;
   text-decoration: none;
@@ -96,6 +97,15 @@ header nav ul li a:hover {
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  min-width: 320px;
+}
+
+.card__error {
+  background-color: #ffa5a5;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  min-width: 320px;
 }
 
 footer {

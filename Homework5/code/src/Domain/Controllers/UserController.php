@@ -2,18 +2,27 @@
 
 namespace Geekbrains\Application1\Domain\Controllers;
 
-use Geekbrains\Application1\Domain\Models\User;
+use Geekbrains\Application1\Application\Application;
 use Geekbrains\Application1\Application\Render;
+use Geekbrains\Application1\Application\Auth;
+use Geekbrains\Application1\Domain\Models\User;
+use Geekbrains\Application1\Domain\Controllers\AbstractController;
 
-class UserController
+class UserController extends AbstractController
 {
+
+    protected array $actionsPermissions = [
+        'actionHash' => ['admin', 'some'],
+        'actionSave' => ['admin']
+    ];
+    
     // Cохранение пользователя
     public function actionSave(): string
     {
         if (User::validateRequestData()) {
-            $name = $_GET['name'] ?? null;
-            $lastname = $_GET['lastname'] ?? null;
-            $birthday = $_GET['birthday'] ?? null;
+            $name = $_POST['name'] ?? null;
+            $lastname = $_POST['lastname'] ?? null;
+            $birthday = $_POST['birthday'] ?? null;
 
             $user = new User();
             $user->setParamsFromRequestData();
@@ -35,10 +44,10 @@ class UserController
 
     public function actionUpdate(): string
     {
-        $id = $_GET['id'] ?? null;
-        $name = $_GET['name'] ?? null;
-        $lastname = $_GET['lastname'] ?? null;
-        $birthday = $_GET['birthday'] ?? null;
+        $id = $_POST['id'] ?? null;
+        $name = $_POST['name'] ?? null;
+        $lastname = $_POST['lastname'] ?? null;
+        $birthday = $_POST['birthday'] ?? null;
 
         if (!$id) {
             throw new \Exception("ID пользователя обязателен для обновления.");
@@ -79,11 +88,10 @@ class UserController
         );
     }
 
-
     // Удаление пользователя
     public function actionDelete(): string
     {
-        $id = $_GET['id'] ?? null;
+        $id = $_POST['id'] ?? null;
 
         if (!$id) {
             throw new \Exception("ID пользователя обязателен для удаления.");
@@ -112,7 +120,7 @@ class UserController
     public function addUserForm(): string
     {
         $render = new Render();
-        return $render->renderPage('adduser.twig', [
+        return $render->renderPageWithForm('form-add-user.twig', [
             'title' => 'Добавление пользователя'
         ]);
     }
@@ -121,7 +129,7 @@ class UserController
     public function updateUserForm(): string
     {
         $render = new Render();
-        return $render->renderPage('updateuser.twig', [
+        return $render->renderPageWithForm('form-update-user.twig', [
             'title' => 'Изменение пользователя'
         ]);
     }
@@ -130,7 +138,7 @@ class UserController
     public function deleteUserForm(): string
     {
         $render = new Render();
-        return $render->renderPage('deleteuser.twig', [
+        return $render->renderPageWithForm('form-delete-user.twig', [
             'title' => 'Удаление пользователя'
         ]);
     }
@@ -143,7 +151,7 @@ class UserController
 
         if (!$users) {
             return $render->renderPage(
-                'user-empty.twig',
+                'message.twig',
                 [
                     'title' => 'Список пользователей',
                     'message' => "Список пуст"
@@ -158,5 +166,79 @@ class UserController
                 ]
             );
         }
+    }
+
+    public function actionAuth(): string
+    {
+        $render = new Render();
+
+        return $render->renderPageWithForm(
+            'form-auth.twig',
+            [
+                'title' => 'Форма логина'
+            ]
+        );
+    }
+
+    public function actionHash(): string
+    {
+        return Auth::getPasswordHash($_GET['pass_string']);
+    }
+
+    public function actionLogin(): string
+    {
+        $result = false;
+
+        if (isset($_POST['login']) && isset($_POST['password'])) {
+            $result = Application::$auth->proceedAuth($_POST['login'], $_POST['password']);
+        }
+
+        if (!$result) {
+            $render = new Render();
+
+            return $render->renderPageWithForm(
+                'form-auth.twig',
+                [
+                    'title' => 'Форма логина',
+                    'success' => false,
+                    'error' => 'Неверные логин или пароль!',
+                ]
+            );
+        } else {
+            // Запомнить меня
+            if (!empty($_POST['remember_me'])) {
+                $token = bin2hex(random_bytes(32));
+                setcookie('remember_me', $token, time() + (3600 * 24 * 30), '/', '', false, true);
+
+                $sql = "UPDATE users SET remember_token = :token WHERE id_user = :id_user";
+                $handler = Application::$storage->get()->prepare($sql);
+                $handler->execute(['token' => $token, 'id_user' => $_SESSION['id_user']]);
+            }
+
+            header('Location: /');
+            return "";
+        }
+    }
+
+
+    public function actionLogout(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (isset($_COOKIE['remember_me'])) {
+            $sql = "UPDATE users SET remember_token = NULL WHERE id_user = :id_user";
+            $handler = Application::$storage->get()->prepare($sql);
+            $handler->execute(['id_user' => $_SESSION['id_user']]);
+            setcookie('remember_me', '', time() - 3600, '/');
+        }
+
+        $_SESSION = [];
+        session_unset();
+        session_destroy();
+
+        header('Location: /user/auth/');
+        exit;
     }
 }

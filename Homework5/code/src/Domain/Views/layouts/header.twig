@@ -1,8 +1,20 @@
 <header>
-    <nav>
+    <nav class="wrap">
         <ul>
             <li><a href="/">Главная</a></li>
             <li><a href="/about">О нас</a></li>
+        </ul>
+        {% if user_authorized %}
+        <ul>
+            <li>Привет, {{ user_name }}!</li>
+        </ul>
+        {% endif %}
+        <ul>
+            {% if not user_authorized %}
+            <li><a href="/user/auth/">Вход в систему</a></li>
+            {% else %}
+            <li><a href="/user/logout/">Выйти из системы</a></li>
+            {% endif %}
         </ul>
     </nav>
 </header>

@@ -95,35 +95,61 @@ class User
 
     public static function validateRequestData(): bool
     {
-        if (
-            isset($_GET['name']) && !empty($_GET['name']) &&
-            isset($_GET['lastname']) && !empty($_GET['lastname']) &&
-            isset($_GET['birthday']) && !empty($_GET['birthday'])
-        ) {
+        $result =  true;
 
-            $name = $_GET['name'];
-            $lastname = $_GET['lastname'];
-
-            if (strlen($name) < 2) {
-                throw new \Exception("Переданное имя не корректно");
-                return false;
-            }
-
-            if (strlen($lastname) < 2) {
-                throw new \Exception("Переданная фамилия не корректна");
-                return false;
-            }
-            return true;
-        } else {
-            return false;
+        if (!(
+            isset($_POST['name']) && !empty($_POST['name']) &&
+            isset($_POST['lastname']) && !empty($_POST['lastname']) &&
+            isset($_POST['birthday']) && !empty($_POST['birthday'])
+        )) {
+            $result = false;
         }
+
+        $name = $_POST['name'];
+        $lastname = $_POST['lastname'];
+        $post_birthday = $_POST['birthday'];
+        $dateParts = explode('-', $post_birthday);
+        $birthday = $dateParts[2] . '-' . $dateParts[1] . '-' . $dateParts[0];
+
+        if (!preg_match('/^(\d{2}-\d{2}-\d{4})$/', $birthday)) {
+            throw new \Exception("Переданная дата рождения не корректна");
+            $result =  false;
+        }
+
+        if (!isset($_SESSION['csrf_token']) || $_SESSION['csrf_token'] != $_POST['csrf_token']) {
+            throw new \Exception("CSRF токен отсутствует в сессии или не совпадает с токеном, отправленным в запросе");
+            $result = false;
+        }
+
+        // Проверка имени на наличие HTML-тегов
+        if (preg_match('/<[^>]*>/', $name)) {
+            throw new \Exception("Имя содержит запрещённые символы");
+            $result = false;
+        }
+
+        // Проверка фамилии на наличие HTML-тегов
+        if (preg_match('/<[^>]*>/', $lastname)) {
+            throw new \Exception("Фамилия содержит запрещённые символы");
+            $result = false;
+        }
+
+        if (strlen($name) < 2) {
+            throw new \Exception("Переданное имя не корректно");
+            $result =  false;
+        }
+
+        if (strlen($lastname) < 2) {
+            throw new \Exception("Переданная фамилия не корректна");
+            $result =  false;
+        }
+        return $result;
     }
 
     public function setParamsFromRequestData(): void
     {
-        $this->userName = $_GET['name'];
-        $this->userLastName = $_GET['lastname'];
-        $this->setUserBirthday($_GET['birthday']);
+        $this->userName = htmlspecialchars($_POST['name']);
+        $this->userLastName = htmlspecialchars($_POST['lastname']);
+        $this->setUserBirthday($_POST['birthday']);
     }
 
     public function saveToStorage(): void
@@ -177,6 +203,46 @@ class User
         $result = $handler->fetch();
 
         return $result['user_count'] > 0;
+    }
+
+    public static function destroyToken(): array
+    {
+        $userSql = "UPDATE users SET token = :token WHERE id_user = :id";
+
+        $handler = Application::$storage->get()->prepare($userSql);
+        $handler->execute(['token' => md5(bin2hex(random_bytes(16))), 'id' => $_SESSION['auth']['id_user']]);
+        $result = $handler->fetchAll();
+
+        return $result[0] ?? [];
+    }
+
+    public static function verifyToken(string $token): array
+    {
+        $userSql = "SELECT * FROM users WHERE token = :token";
+
+
+        $handler = Application::$storage->get()->prepare($userSql);
+        $handler->execute(['token' => $token]);
+        $result = $handler->fetchAll();
+
+        return $result[0] ?? [];
+    }
+
+    public static function setToken(int $userID, string $token): void
+    {
+        $userSql = "UPDATE users SET token = :token WHERE id_user = :id";
+
+
+        $handler = Application::$storage->get()->prepare($userSql);
+        $handler->execute(['id' => $userID, 'token' => $token]);
+
+
+        setcookie(
+            'auth_token',
+            $token,
+            time() + 60 * 60 * 24 * 30,
+            '/'
+        );
     }
 
     public static function deleteFromStorage(int $user_id): void
