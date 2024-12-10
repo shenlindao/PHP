@@ -30,9 +30,9 @@ class Render
         $templateVariables['content_template_name'] = $contentTemplateName;
         $templateVariables['title'] = $templateVariables['title'] ?? 'Имя страницы';
 
-        if (isset($_SESSION['user_name'])) {
+        if (isset($_SESSION['auth']['user_name'])) {
             $templateVariables['user_authorized'] = true;
-            $templateVariables['user_name'] = $_SESSION['user_name'];
+            $templateVariables['user_name'] = $_SESSION['auth']['user_name'];
         } else {
             $templateVariables['user_authorized'] = false;
         }

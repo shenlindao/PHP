@@ -27,8 +27,6 @@ class Auth {
         return bin2hex($bytes);
     }
 
-
-
     public function proceedAuth(string $login, string $password): bool{
         $sql = "SELECT id_user, user_name, user_lastname, password_hash FROM users WHERE login = :login";
 

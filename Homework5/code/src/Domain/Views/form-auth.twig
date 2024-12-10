@@ -1,5 +1,5 @@
-{% if success is not defined or success == false %}
-  <p class="card__error">{{ error }}</p>
+{% if error %}
+  <p class="card__error">{{ error_decription }}</p>
 {% endif %}
 <div class="card">
     <form action="/user/login" method="POST">

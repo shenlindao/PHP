@@ -12,10 +12,18 @@ class UserController extends AbstractController
 {
 
     protected array $actionsPermissions = [
-        'actionHash' => ['admin', 'some'],
-        'actionSave' => ['admin']
+        'actionIndex' => ['admin'],
+        'addUserForm' => ['admin'],
+        'updateUserForm' => ['admin'],
+        'deleteUserForm' => ['admin'],
+        'actionSave' => ['admin'],
+        'actionUpdate' => ['admin'],
+        'actionDelete' => ['admin'],
+        'actionHash' => ['admin'],
+        'actionAuth' => ['admin'],
+        'actionLogin' => ['admin', 'user'],
+        'actionLogout' => ['admin', 'user'],
     ];
-    
     // Cохранение пользователя
     public function actionSave(): string
     {
@@ -200,8 +208,8 @@ class UserController extends AbstractController
                 'form-auth.twig',
                 [
                     'title' => 'Форма логина',
-                    'success' => false,
-                    'error' => 'Неверные логин или пароль!',
+                    'error' => true,
+                    'error_decription' => 'Неверные логин или пароль!',
                 ]
             );
         } else {
@@ -212,7 +220,7 @@ class UserController extends AbstractController
 
                 $sql = "UPDATE users SET remember_token = :token WHERE id_user = :id_user";
                 $handler = Application::$storage->get()->prepare($sql);
-                $handler->execute(['token' => $token, 'id_user' => $_SESSION['id_user']]);
+                $handler->execute(['token' => $token, 'id_user' => $_SESSION['auth']['id_user']]);
             }
 
             header('Location: /');
@@ -223,14 +231,10 @@ class UserController extends AbstractController
 
     public function actionLogout(): void
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
         if (isset($_COOKIE['remember_me'])) {
             $sql = "UPDATE users SET remember_token = NULL WHERE id_user = :id_user";
             $handler = Application::$storage->get()->prepare($sql);
-            $handler->execute(['id_user' => $_SESSION['id_user']]);
+            $handler->execute(['id_user' => $_SESSION['auth']['id_user']]);
             setcookie('remember_me', '', time() - 3600, '/');
         }
 

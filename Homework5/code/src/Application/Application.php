@@ -34,10 +34,7 @@ class Application
 
     public function run(): string
     {
-        // Проверяем, запущена ли сессия
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        session_start();
 
         $routeArray = explode('/', ltrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'));
         $controllerName = isset($routeArray[0]) && $routeArray[0] !== '' ? $routeArray[0] : 'page';
@@ -76,18 +73,9 @@ class Application
 
         // Проверяем существование контроллера
         if (class_exists($this->controllerName)) {
-            // пытаемся вызвать метод
-            if (isset($routeArray[2]) && $routeArray[2] != '') {
-                $methodName = $routeArray[2];
-            } else {
-                $methodName = "index";
-            }
-
-            $this->methodName = "action" . ucfirst($methodName);
-
+            // Проверяем существование метода
             if (method_exists($this->controllerName, $this->methodName)) {
                 $controllerInstance = new $this->controllerName();
-
                 if ($controllerInstance instanceof AbstractController) {
                     if ($this->checkAccessToMethod($controllerInstance, $this->methodName)) {
                         return call_user_func_array(
@@ -136,11 +124,16 @@ class Application
 
     private function checkAccessToMethod(AbstractController $controllerInstance, string $methodName): bool
     {
-        $userRoles = $controllerInstance->getUserRoles();
-
-        $rules = $controllerInstance->getActionsPermissions($methodName);
-
         $isAllowed = false;
+
+        if ($methodName === 'actionAuth') {
+            $isAllowed = true;
+            return $isAllowed;
+        }
+
+        $userRoles = $controllerInstance->getUserRoles();
+        
+        $rules = $controllerInstance->getActionsPermissions($methodName);
 
         if (!empty($rules)) {
             foreach ($rules as $rolePermission) {
