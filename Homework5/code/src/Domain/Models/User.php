@@ -112,33 +112,45 @@ class User
         $birthday = $dateParts[2] . '-' . $dateParts[1] . '-' . $dateParts[0];
 
         if (!preg_match('/^(\d{2}-\d{2}-\d{4})$/', $birthday)) {
+            $logMessage = "Пользователь " . $_SESSION['auth']['user_name'] . " передал некорректную дату рождения.";
+            Application::$logger->error($logMessage);
             throw new \Exception("Переданная дата рождения не корректна");
             $result =  false;
         }
 
         if (!isset($_SESSION['csrf_token']) || $_SESSION['csrf_token'] != $_POST['csrf_token']) {
+            $logMessage = "CSRF токен отсутствует в сессии пользователя " . $_SESSION['auth']['user_name'] . ".";
+            Application::$logger->error($logMessage);
             throw new \Exception("CSRF токен отсутствует в сессии или не совпадает с токеном, отправленным в запросе");
             $result = false;
         }
 
         // Проверка имени на наличие HTML-тегов
         if (preg_match('/<[^>]*>/', $name)) {
+            $logMessage = "Пользователь " . $_SESSION['auth']['user_name'] . " попытался ввести запрещённые символы в поле Имя.";
+            Application::$logger->error($logMessage);
             throw new \Exception("Имя содержит запрещённые символы");
             $result = false;
         }
 
         // Проверка фамилии на наличие HTML-тегов
         if (preg_match('/<[^>]*>/', $lastname)) {
+            $logMessage = "Пользователь " . $_SESSION['auth']['user_name'] . " попытался ввести запрещённые символы в поле Фамилия.";
+            Application::$logger->error($logMessage);
             throw new \Exception("Фамилия содержит запрещённые символы");
             $result = false;
         }
 
         if (strlen($name) < 2) {
+            $logMessage = "Пользователь " . $_SESSION['auth']['user_name'] . " передал некорректное Имя.";
+            Application::$logger->error($logMessage);
             throw new \Exception("Переданное имя не корректно");
             $result =  false;
         }
 
         if (strlen($lastname) < 2) {
+            $logMessage = "Пользователь " . $_SESSION['auth']['user_name'] . " передал некорректную Фамилию.";
+            Application::$logger->error($logMessage);
             throw new \Exception("Переданная фамилия не корректна");
             $result =  false;
         }

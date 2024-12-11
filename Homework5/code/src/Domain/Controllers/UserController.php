@@ -46,6 +46,8 @@ class UserController extends AbstractController
                 ]
             );
         } else {
+            $logMessage = "Пользователь " . $_SESSION['auth']['user_name'] . " ввёл некорректные данные.";
+            Application::$logger->error($logMessage);
             throw new \Exception("Переданные данные некорректны.");
         }
     }
