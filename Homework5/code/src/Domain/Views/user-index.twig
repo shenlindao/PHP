@@ -6,7 +6,12 @@
         {% for user in users %}
             <li>
             <u>User ID:</u> <b>{{ user.getUserId() }}</b> — <b>{{ user.getUserName() }} {{ user.getUserLastName() }}</b>
-            (День рождения: <b>{{ user.getUserBirthday() | date('d.m.Y') }}</b>)
+            (День рождения: 
+            {% if user.getUserBirthday() is empty %}
+                <b>не установлен</b>
+            {% else %}
+                <b>{{ user.getUserBirthday() | date('d.m.Y') }}</b>
+            {% endif %}
             </li>
         {% endfor %}
     </ul>
