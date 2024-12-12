@@ -177,8 +177,6 @@ class User
         $this->userName = htmlspecialchars($_POST['name']);
         $this->userLastName = htmlspecialchars($_POST['lastname']);
         $this->setUserBirthday($_POST['birthday']);
-        $this->userLogin = htmlspecialchars($_POST['login']);
-        $this->userPassword = Auth::getPasswordHash($_POST['password']);
     }
 
     public function saveToStorage(): void
@@ -190,8 +188,6 @@ class User
             'user_name' => $this->userName,
             'user_lastname' => $this->userLastName,
             'user_birthday' => $this->userBirthday,
-            'user_login' => $this->userLogin,
-            'user_password' => $this->userPassword
         ]);
     }
 
