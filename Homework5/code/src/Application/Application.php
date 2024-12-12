@@ -8,6 +8,7 @@ use Geekbrains\Application1\Domain\Controllers\AbstractController;
 use Geekbrains\Application1\Infrastructure\Config;
 use Geekbrains\Application1\Infrastructure\Storage;
 use Geekbrains\Application1\Application\Auth;
+use Geekbrains\Application1\Domain\Controllers\UserController;
 use Monolog\Logger;
 use Monolog\Level;
 use Monolog\Handler\StreamHandler;
@@ -15,6 +16,7 @@ use Monolog\Handler\FirePHPHandler;
 
 class Application
 {
+    private $container;
 
     private const APP_NAMESPACE = 'Geekbrains\Application1\Domain\Controllers\\';
 
@@ -29,7 +31,9 @@ class Application
 
     public static Logger $logger;
 
-    public function __construct()
+    public array $sidebarData;
+
+    public function __construct(Container $container)
     {
         Application::$config = new Config();
         Application::$storage = new Storage();
@@ -41,6 +45,7 @@ class Application
         Application::$logger->pushHandler(
             new FirePHPHandler()
         );
+        $this->container = $container;
     }
 
     public function run(): string
@@ -62,6 +67,7 @@ class Application
                     'update' => 'actionUpdate',
                     'delete' => 'actionDelete',
                     'login' => 'actionLogin',
+                    'refresh' => 'actionIndexRefresh',
                 ],
                 'GET' => [
                     'hash' => 'actionHash',
@@ -86,7 +92,7 @@ class Application
         if (class_exists($this->controllerName)) {
             // Проверяем существование метода
             if (method_exists($this->controllerName, $this->methodName)) {
-                $controllerInstance = new $this->controllerName();
+                $controllerInstance = new $this->controllerName($this->container);
                 if ($controllerInstance instanceof AbstractController) {
                     if ($this->checkAccessToMethod($controllerInstance, $this->methodName)) {
                         return call_user_func_array(
@@ -122,8 +128,10 @@ class Application
     private function renderError(int $statusCode): string
     {
         http_response_code($statusCode);
+        
+        $viewFolder = 'src/Domain/Views';
 
-        $loader = new FilesystemLoader($_SERVER['DOCUMENT_ROOT'] . '/src/Domain/Views');
+        $loader = new FilesystemLoader($_SERVER['DOCUMENT_ROOT'] . "/../" . $viewFolder);
         $twig = new Environment($loader);
 
         $contentTemplateName = "{$statusCode}.twig";
@@ -145,11 +153,6 @@ class Application
     {
         $isAllowed = false;
 
-        if ($methodName === 'actionAuth') {
-            $isAllowed = true;
-            return $isAllowed;
-        }
-
         $userRoles = $controllerInstance->getUserRoles();
 
         $rules = $controllerInstance->getActionsPermissions($methodName);
@@ -164,5 +167,27 @@ class Application
         }
 
         return $isAllowed;
+    }
+
+    public function getSidebarData(): array
+    {
+        $menuItems = [
+            'Все пользователи' => ['url' => '/user', 'method' => 'actionIndex'],
+            'Добавить пользователя' => ['url' => '/adduser', 'method' => 'addUserForm'],
+            'Изменить пользователя' => ['url' => '/updateuser', 'method' => 'updateUserForm'],
+            'Удалить пользователя' => ['url' => '/deleteuser', 'method' => 'deleteUserForm'],
+        ];
+
+        $sidebarData = [];
+
+        $UserController = new UserController($this->container);
+
+        foreach ($menuItems as $label => $item) {
+            if ($this->checkAccessToMethod($UserController, $item['method'])) {
+                $sidebarData[] = array_merge($item, ['label' => $label]);
+            }
+        }
+
+        return $sidebarData;
     }
 }

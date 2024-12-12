@@ -9,26 +9,32 @@ use Twig\Environment;
 class Render
 {
 
-    private string $viewFolder = '/Domain/Views/';
+    private string $viewFolder = 'src/Domain/Views/';
     private FilesystemLoader $loader;
     private Environment $environment;
+    private $container;
 
-
-    public function __construct()
+    public function __construct(Container $container)
     {
-
-        $this->loader = new FilesystemLoader(dirname(__DIR__) . $this->viewFolder);
+        $this->loader = new FilesystemLoader($_SERVER['DOCUMENT_ROOT'] . "/../" . $this->viewFolder);
         $this->environment = new Environment($this->loader, [
-            // 'cache' => $_SERVER['DOCUMENT_ROOT'].'/cache/',
+            // 'cache' => $_SERVER['DOCUMENT_ROOT'] . '/../cache/',
         ]);
+        $this->container = $container;
     }
 
     public function renderPage(string $contentTemplateName = 'page-index.twig', array $templateVariables = [])
     {
+
+        $application = $this->container->get(Application::class);
+
+        // Получаем данные боковой панели через приложение
+        $sidebarData = $application->getSidebarData();
         $template = $this->environment->load('/layouts/main.twig');
 
         $templateVariables['content_template_name'] = $contentTemplateName;
         $templateVariables['title'] = $templateVariables['title'] ?? 'Имя страницы';
+        $templateVariables['sidebarData'] = $sidebarData;
 
         if (isset($_SESSION['auth']['user_name'])) {
             $templateVariables['user_authorized'] = true;
@@ -43,12 +49,12 @@ class Render
     public static function renderExceptionPage(Exception $exception): string
     {
         $contentTemplateName = "error.twig";
-        $viewFolder = '/src/Domain/Views/';
+        $viewFolder = 'src/Domain/Views';
 
-        $loader = new FilesystemLoader($_SERVER['DOCUMENT_ROOT'] . $viewFolder);
+        $loader = new FilesystemLoader($_SERVER['DOCUMENT_ROOT'] . "/../" . $viewFolder);
 
         $environment = new Environment($loader, [
-            'cache' => $_SERVER['DOCUMENT_ROOT'] . '/cache/',
+            // 'cache' => $_SERVER['DOCUMENT_ROOT'] . '/../cache/',
         ]);
 
         $template = $environment->load('layouts/main.twig');

@@ -7,12 +7,20 @@ use Geekbrains\Application1\Application\Render;
 use Geekbrains\Application1\Application\Auth;
 use Geekbrains\Application1\Domain\Models\User;
 use Geekbrains\Application1\Domain\Controllers\AbstractController;
+use Geekbrains\Application1\Application\Container;
 
 class UserController extends AbstractController
 {
+    private $container;
+
+    public function __construct(Container $container)
+    {
+        $this->container = $container;
+    }
 
     protected array $actionsPermissions = [
-        'actionIndex' => ['admin'],
+        'actionIndex' => ['admin', 'user'],
+        'actionIndexRefresh' => ['admin', 'user'],
         'addUserForm' => ['admin'],
         'updateUserForm' => ['admin'],
         'deleteUserForm' => ['admin'],
@@ -24,7 +32,7 @@ class UserController extends AbstractController
         'actionLogin' => ['admin', 'user'],
         'actionLogout' => ['admin', 'user'],
     ];
-    // Cохранение пользователя
+
     public function actionSave(): string
     {
         if (User::validateRequestData()) {
@@ -36,7 +44,7 @@ class UserController extends AbstractController
             $user->setParamsFromRequestData();
             $user->saveToStorage();
 
-            $render = new Render();
+            $render = $this->container->get(Render::class);
 
             return $render->renderPage(
                 'success.twig',
@@ -87,7 +95,7 @@ class UserController extends AbstractController
             $user->updateUser($userDataArray);
         }
 
-        $render = new Render();
+        $render = $this->container->get(Render::class);
 
         return $render->renderPage(
             'success.twig',
@@ -115,7 +123,7 @@ class UserController extends AbstractController
 
         $user->deleteFromStorage($id);
 
-        $render = new Render();
+        $render = $this->container->get(Render::class);
 
         return $render->renderPage(
             'success.twig',
@@ -129,7 +137,7 @@ class UserController extends AbstractController
     // Рендр страницы с формой добавления пользователя
     public function addUserForm(): string
     {
-        $render = new Render();
+        $render = $this->container->get(Render::class);
         return $render->renderPageWithForm('form-add-user.twig', [
             'title' => 'Добавление пользователя'
         ]);
@@ -138,7 +146,7 @@ class UserController extends AbstractController
     // Рендр страницы с формой изменения пользователя
     public function updateUserForm(): string
     {
-        $render = new Render();
+        $render = $this->container->get(Render::class);
         return $render->renderPageWithForm('form-update-user.twig', [
             'title' => 'Изменение пользователя'
         ]);
@@ -147,7 +155,7 @@ class UserController extends AbstractController
     // Рендр страницы с формой удаления пользователя
     public function deleteUserForm(): string
     {
-        $render = new Render();
+        $render = $this->container->get(Render::class);
         return $render->renderPageWithForm('form-delete-user.twig', [
             'title' => 'Удаление пользователя'
         ]);
@@ -157,7 +165,7 @@ class UserController extends AbstractController
     public function actionIndex()
     {
         $users = User::getAllUsersFromStorage();
-        $render = new Render();
+        $render = $this->container->get(Render::class);
 
         if (!$users) {
             return $render->renderPage(
@@ -180,7 +188,7 @@ class UserController extends AbstractController
 
     public function actionAuth(): string
     {
-        $render = new Render();
+        $render = $this->container->get(Render::class);
 
         return $render->renderPageWithForm(
             'form-auth.twig',
@@ -208,7 +216,7 @@ class UserController extends AbstractController
         }
 
         if (!$result) {
-            $render = new Render();
+            $render = $this->container->get(Render::class);
 
             return $render->renderPageWithForm(
                 'form-auth.twig',
@@ -234,7 +242,6 @@ class UserController extends AbstractController
         }
     }
 
-
     public function actionLogout(): void
     {
         if (isset($_COOKIE['remember_me'])) {
@@ -250,5 +257,25 @@ class UserController extends AbstractController
 
         header('Location: /user/auth/');
         exit;
+    }
+
+    public function actionIndexRefresh()
+    {
+        $limit = null;
+
+        if (isset($_POST['maxId']) && ($_POST['maxId'] > 0)) {
+            $limit = $_POST['maxId'];
+        }
+        
+        $users = User::getAllUsersFromStorage($limit);
+        $usersData = [];
+
+        if (count($users) > 0) {
+            foreach ($users as $user) {
+                $usersData[] = $user->getUserDataAsArray();
+            }
+        }
+
+        return json_encode($usersData);
     }
 }

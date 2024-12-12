@@ -3,9 +3,8 @@
         Меню
     </h2>
     <ul>
-        <li><a href="/user">Все пользователи</a></li>
-        <li><a href="/adduser">Добавить пользователя</a></li>
-        <li><a href="/updateuser">Изменить пользователя</a></li>
-        <li><a href="/deleteuser">Удалить пользователя</a></li>
+        {% for item in sidebarData %}
+        <li><a href="{{ item.url }}">{{ item.label }}</a>
+        {% endfor %}
     </ul>
 </div>

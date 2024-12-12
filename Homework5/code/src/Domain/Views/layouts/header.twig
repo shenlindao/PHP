@@ -1,20 +1,26 @@
-<header>
-    <nav class="wrap">
-        <ul>
-            <li><a href="/">Главная</a></li>
-            <li><a href="/about">О нас</a></li>
-        </ul>
-        {% if user_authorized %}
-        <ul>
-            <li>Привет, {{ user_name }}!</li>
-        </ul>
-        {% endif %}
-        <ul>
-            {% if not user_authorized %}
-            <li><a href="/user/auth/">Вход в систему</a></li>
-            {% else %}
-            <li><a href="/user/logout/">Выйти из системы</a></li>
+<header class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between py-3 mb-4 border-bottom">
+    <div class="container">
+        <nav class="wrap">
+            <ul>
+                <li><a href="/">Главная</a></li>
+                <li><a href="/about">О нас</a></li>
+            </ul>
+            {% if user_authorized %}
+            <ul>
+                <li>Привет, {{ user_name }}!</li>
+            </ul>
             {% endif %}
-        </ul>
-    </nav>
+            <ul>
+                {% if not user_authorized %}
+                <li>
+                <button type="button" class="btn btn-primary"><a href="/user/auth/">Вход</a></button>
+                </li>
+                {% else %}
+                <li>
+                <button type="button" class="btn btn-primary"><a href="/user/logout/">Выход</a></button>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
 </header>

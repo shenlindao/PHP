@@ -3,30 +3,33 @@
 namespace Geekbrains\Application1\Domain\Models;
 
 use Geekbrains\Application1\Application\Application;
+use Geekbrains\Application1\Application\Auth;
 
 class User
 {
-    private ?int $idUser;
+    private ?int $userId;
     private ?string $userName;
     private ?string $userLastName;
     private ?int $userBirthday;
+    private ?string $userLogin;
+    private ?string $userPassword;
 
     public function __construct(string $name = null, string $lastName = null, int $birthday = null, int $id_user = null)
     {
+        $this->userId = $id_user;
         $this->userName = $name;
         $this->userLastName = $lastName;
         $this->userBirthday = $birthday;
-        $this->idUser = $id_user;
     }
 
     public function getUserId(): ?int
     {
-        return $this->idUser;
+        return $this->userId;
     }
 
     public function setUserId(int $id_user): void
     {
-        $this->idUser = $id_user;
+        $this->userId = $id_user;
     }
 
     public function getUserName(): string
@@ -78,16 +81,28 @@ class User
         return null;
     }
 
-    public static function getAllUsersFromStorage(): array
+    public static function getAllUsersFromStorage(?int $limit = null): array
     {
         $sql = "SELECT * FROM users";
+
+        if (isset($limit) && $limit > 0) {
+            $sql .= " WHERE id_user > " . (int)$limit;
+        }
+
         $handler = Application::$storage->get()->prepare($sql);
         $handler->execute();
         $result = $handler->fetchAll();
 
         $users = [];
+
         foreach ($result as $item) {
-            $users[] = new self($item['user_name'], $item['user_lastname'], $item['user_birthday_timestamp'], $item['id_user']);
+            $user = new User(
+                $item['user_name'], 
+                $item['user_lastname'], 
+                isset($item['user_birthday_timestamp']) ? intval($item['user_birthday_timestamp']) : null, 
+                isset($item['id_user']) ? intval($item['id_user']) : null
+            );
+            $users[] = $user;
         }
 
         return $users;
@@ -162,6 +177,8 @@ class User
         $this->userName = htmlspecialchars($_POST['name']);
         $this->userLastName = htmlspecialchars($_POST['lastname']);
         $this->setUserBirthday($_POST['birthday']);
+        $this->userLogin = htmlspecialchars($_POST['login']);
+        $this->userPassword = Auth::getPasswordHash($_POST['password']);
     }
 
     public function saveToStorage(): void
@@ -172,7 +189,9 @@ class User
         $handler->execute([
             'user_name' => $this->userName,
             'user_lastname' => $this->userLastName,
-            'user_birthday' => $this->userBirthday
+            'user_birthday' => $this->userBirthday,
+            'user_login' => $this->userLogin,
+            'user_password' => $this->userPassword
         ]);
     }
 
@@ -199,12 +218,11 @@ class User
 
         $sql .= " WHERE id_user = :id_user";
 
-        $userDataArray['id_user'] = $this->idUser;
+        $userDataArray['id_user'] = $this->userId;
 
         $handler = Application::$storage->get()->prepare($sql);
         $handler->execute($userDataArray);
     }
-
 
     public static function exists(int $id): bool
     {
@@ -263,5 +281,17 @@ class User
 
         $handler = Application::$storage->get()->prepare($sql);
         $handler->execute(['id_user' => $user_id]);
+    }
+
+    public function getUserDataAsArray(): array
+    {
+        $userArray = [
+            'id' => $this->userId,
+            'username' => $this->userName,
+            'userlastname' => $this->userLastName,
+            'userbirthday' => date('d.m.Y', $this->userBirthday)
+        ];
+
+        return $userArray;
     }
 }

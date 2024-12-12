@@ -1,18 +1,127 @@
 <h1>
     {{ title }}
 </h1>
-<div class="card">
-    <ul id="users__list">
-        {% for user in users %}
-            <li>
-            <u>User ID:</u> <b>{{ user.getUserId() }}</b> — <b>{{ user.getUserName() }} {{ user.getUserLastName() }}</b>
-            (День рождения: 
-            {% if user.getUserBirthday() is empty %}
-                <b>не установлен</b>
-            {% else %}
-                <b>{{ user.getUserBirthday() | date('d.m.Y') }}</b>
-            {% endif %}
-            </li>
-        {% endfor %}
-    </ul>
+<div class="card max-w-100">
+    <div class="table-responsive small">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th scope="col">
+                        ID                
+                    </th>
+                    <th scope="col">
+                        Имя             
+                    </th>
+                    <th scope="col">
+                        Фамилия       
+                    </th>
+                    <th scope="col">
+                        День рождения 
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="content-template">
+                {% for user in users %}
+                    <tr>
+                        <td>
+                            {{ user.getUserId() }}
+                        </td>
+                        <td>
+                            {{ user.getUserName() }}
+                        </td>
+                        <td>
+                            {{ user.getUserLastName() }}
+                        </td>
+                        <td>
+                            {% if user.getUserBirthday() is not empty %}
+                                {{ user.getUserBirthday() | date('d.m.Y') }}
+                            {% else %}
+                                <b>
+                                    Не задан      
+                                </b>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" 
+                               class="btn btn-danger btn-sm btn-delete" 
+                               data-user-id="{{ user.getUserId() }}" 
+                               title="Удалить">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<script>
+    let maxId = $('.table-responsive tbody tr:last-child td:first-child').html();
+
+    function deleteUser(userId) {
+        $.ajax({
+            method: 'POST',
+            url: '/user/delete',
+            data: { id: userId },
+        })
+        .done(function (response) {
+            alert('Пользователь удалён');
+            indexRefresh();
+        })
+        .fail(function () {
+            alert('Ошибка при удалении пользователя');
+        });
+    }
+
+    $(document).on('click', '.btn-delete', function (event) {
+        event.preventDefault();
+        let userId = $(this).data('user-id');
+
+        if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+            deleteUser(userId);
+        }
+    });
+
+    function indexRefresh() {
+        $.ajax({
+            method: 'POST',
+            url: '/user/refresh',
+            data: JSON.stringify({ maxId: maxId }),
+            contentType: 'application/json',
+        })
+        .done(function (response) {
+            let users = $.parseJSON(response);
+
+            console.log(response);
+
+            $('.content-template tbody').empty();
+
+            if (users.length !== 0) {
+                for (let k in users) {
+                    let row = '<tr>';
+                    row += '<td>' + users[k].id + '</td>';
+                    maxId = users[k].id;
+
+                    row += '<td>' + users[k].username + '</td>';
+                    row += '<td>' + users[k].userlastname + '</td>';
+                    row += '<td>' + (users[k].userbirthday || '<b>Не задан</b>') + '</td>';
+
+                    row += `<td>
+                                <a href="#" 
+                                   class="btn btn-danger btn-sm btn-delete" 
+                                   data-user-id="${users[k].id}" 
+                                   title="Удалить">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>`;
+
+                    row += '</tr>';
+
+                    $('.content-template tbody').append(row);
+                }
+            }
+        });
+    }
+    setInterval(indexRefresh, 5000);
+</script>
